@@ -10,5 +10,3 @@ const defaultConfig = {
 const config = Object.assign(defaultConfig, configJsonDev)
 
 module.exports = config; 
-
-// const { cfg } = require('../../config')
