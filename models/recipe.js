@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
     const recipe = sequelize.define('recipe', {
-      user_id: DataTypes.INTEGER,
+    //   user_id: DataTypes.INTEGER,
       title: DataTypes.STRING,
       skills: DataTypes.STRING,
       content: DataTypes.STRING,

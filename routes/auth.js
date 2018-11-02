@@ -10,9 +10,6 @@ module.exports = (router) => {
     router.use(bodyParser.json());
 
     router.route('/sign-up')
-        // .get((req, res) => {
-        //     res.render("signUp.hbs");
-        // })
         .post((req, res) => {
             let hash = bcrypt.hashSync(req.body.pass, config.salt);
             db.user.create({
@@ -31,9 +28,6 @@ module.exports = (router) => {
         })
 
     router.route('/sign-in')
-        // .get((req, res) => {
-        //     return res.render("signIn.hbs");
-        // })
         .post((req, res) => {
             db.user.findOne({ where: { email: req.body.email } }).then((user) => {
                 if (user) {
@@ -51,5 +45,19 @@ module.exports = (router) => {
                 return res.send("Incorrect email");
 
             });
+        });
+    router.route('/register')
+        .post((req, res) => {
+            console.log('ok');
+
+            console.log(req.body);
+            res.json({ name: req.body.firstName, age: req.body.age });
+
+        });
+    router.route('/login')
+        .post((req, res) => {
+            console.log(req.body);
+            res.json({ email: req.body.email });
+
         });
 }
