@@ -2,7 +2,7 @@ const env = process.env.NODE_ENV || 'development';
 const configJsonDev = require(__dirname + '/../config/config.json')[env];
 
 const defaultConfig = {
-    'salt': '10',
+    'salt': 10,
     'secretJWT': 'mysecretkey',
     'usersQty': 3,
 };
