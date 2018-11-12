@@ -1,6 +1,6 @@
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const upload = multer({ dest: './files/' });
+const upload = multer({ dest: './public/files/' });
 const db = require('../models')
 const checkAuth = require('../middlewares/authFunc');
 
@@ -16,10 +16,11 @@ module.exports = (router) => {
             const dish_photo = { path: `/files/${req.file.filename}`, name: req.file.originalname };
             const payload = req.body;
             db.recipe.create({ ...payload, dish_photo, user_id: req.user.id })
-                .then(recipe => console.log('resipe', recipe.dataValues))
+                .then((recipe) => {
+                    console.log('resipe', recipe.dataValues);
+                    return res.json({ message: "ok" });
+                })
                 .catch(err => res.status(500).json({ message: err.message }))
-
-            return res.json({ message: "ok" });
         })
         .get((req, res) => {
             db.recipe.findAll()
@@ -27,7 +28,14 @@ module.exports = (router) => {
                     return res.json(recipes);
                 })
         })
-
+    router.route('/my-recipes')
+        .get(checkAuth, (req, res) => {
+            db.recipe.findAll({where: { user_id: req.user.id } })
+            .then((recipes) => {
+                return res.json(recipes);
+            })
+            .catch(err => res.status(500).json({ message: err.message }))
+        })
     router.route('/home')
         .get((req, res) => {
             db.recipe.findAll()
