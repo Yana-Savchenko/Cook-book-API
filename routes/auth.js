@@ -51,25 +51,4 @@ module.exports = (router) => {
 
             });
         });
-    router.route('/')
-        .get((req, res) => {
-            let token = req.get('Authorization');
-            jwt.verify(token, config.secretJWT, (err, decoded) => {
-                if (err) {
-                    res.status(401);
-                    res.end();
-                }
-                if (decoded) {
-
-                    db.user.findOne({ where: { id: decoded.id } }).then((user) => {
-                        if (user) {
-                            return res.json({ id: user.id, email: user.email });
-                        } else {
-                            res.status(401);
-                            res.end();
-                        }
-                    });
-                }
-            });
-        });
 }

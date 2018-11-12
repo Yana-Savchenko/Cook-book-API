@@ -1,15 +1,16 @@
 var jwt = require('jsonwebtoken');
 const config = require('../config');
 function checkAuth(req, res, next) {
-    if(!req.get('cookie')){
-        return res.redirect('/auth/sign-in');
+    const token = req.get('Authorization');
+    if (!token) {
+        res.status(401);
+        return res.end();
     }
-    console.log('JWT', config.secretJWT);
-    
-    let token = req.get('cookie').replace('token=', '');
+
     jwt.verify(token, config.secretJWT, (err, decoded) => {
         if (err) {
-            return res.redirect('/auth/sign-in');
+            res.status(401);
+            return res.end();
         }
         if (decoded) {
             req.user = decoded;

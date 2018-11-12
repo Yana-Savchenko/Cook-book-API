@@ -12,6 +12,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser())
 app.use(cors());
+app.use(express.static(`${__dirname}/public`));
 
 router(app);
 
@@ -20,3 +21,7 @@ app.listen(3000, () => {
     console.log('Server started on 3000');
     
 });
+
+
+
+

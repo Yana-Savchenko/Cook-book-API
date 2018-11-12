@@ -1,9 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
     const recipe = sequelize.define('recipe', {
       title: DataTypes.STRING,
-      skills: DataTypes.STRING,
+      complexity: DataTypes.STRING,
       content: DataTypes.STRING,
-      image: DataTypes.STRING,
+      dish_photo: DataTypes.JSONB,
+      cooking_time: DataTypes.STRING,
       
     }, {});
     recipe.associate = function(models) {
