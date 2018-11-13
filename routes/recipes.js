@@ -30,17 +30,26 @@ module.exports = (router) => {
         })
     router.route('/my-recipes')
         .get(checkAuth, (req, res) => {
-            db.recipe.findAll({where: { user_id: req.user.id } })
-            .then((recipes) => {
-                return res.json(recipes);
-            })
-            .catch(err => res.status(500).json({ message: err.message }))
+            db.recipe.findAll({ where: { user_id: req.user.id } })
+                .then((recipes) => {
+                    return res.json(recipes);
+                })
+                .catch(err => res.status(500).json({ message: err.message }))
         })
+
     router.route('/home')
         .get((req, res) => {
             db.recipe.findAll()
                 .then((recipes) => {
                     return res.json(recipes);
                 })
+        })
+    router.route('/:categoryID')
+        .get((req, res) => {
+            db.recipe.findAll({ where: { category_id: req.params.categoryID } })
+                .then((recipes) => {
+                    return res.json(recipes);
+                })
+                .catch(err => res.status(500).json({ message: err.message }))
         })
 }
