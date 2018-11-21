@@ -45,7 +45,7 @@ module.exports = (router) => {
 
         }
         let recipes = await db.recipe.findAll(filter)
-        
+
         recipes = recipes.map(recipe => {
           const id = recipe.dataValues.id;
           if (userFavor[id]) {
@@ -110,11 +110,33 @@ module.exports = (router) => {
         const user = await db.user.findById(req.user.id);
         let favor = await user.getRecipes();
         favor = favor.map(recipe => {
-          const id = recipe.dataValues.id;
-            recipe.dataValues.isLiked = true;
+          recipe.dataValues.isLiked = true;
           return recipe
         })
         return res.json(favor);
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    })
+    .post(checkAuth, async (req, res) => {
+      try {
+        const payload = {
+          user_id: req.user.id,
+          recipe_id: req.body.recipe_id,
+        }
+        db.favorite.create(payload).then(() => {
+          return res.json('ok');
+        });
+
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    })
+    .delete(checkAuth, async (req, res) => {
+      try {
+        const user = await db.user.findById(req.user.id);
+        let favor = await user.removeRecipe(req.query.recipe_id);
+        return res.json('ok');  
       } catch (err) {
         return res.status(500).json({ message: err.message });
       }
