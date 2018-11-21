@@ -9,8 +9,13 @@ module.exports = (sequelize, DataTypes) => {
     avatar_path: DataTypes.STRING,
     avatar_name: DataTypes.STRING,
   }, {});
-  user.associate = function(models) {
-    // associations can be defined here
+  user.associate = function (models) {
+    models.user.belongsToMany(models.recipe, {
+      through: {
+        model: models.favorite,
+      },
+      foreignKey: 'user_id',
+    });
   };
   return user;
 };
