@@ -1,6 +1,6 @@
 const db = require('../models')
 
-function checkAccess(req, res, next) {
+function checkAdminRole(req, res, next) {
     db.user.findOne({ where: { id: req.user.id } }).then((user) => {
 
         req.admin = (user.role === "admin")
@@ -8,4 +8,4 @@ function checkAccess(req, res, next) {
     });
 }
 
-module.exports = checkAccess;
+module.exports = checkAdminRole;

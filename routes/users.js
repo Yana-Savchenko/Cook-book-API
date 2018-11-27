@@ -1,12 +1,13 @@
-const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const upload = multer({ dest: './public/files/' });
-const db = require('../models')
 const Sequelize = require('sequelize');
-const Op = Sequelize.Op
+
+const db = require('../models')
 const checkAuth = require('../middlewares/authFunc');
+
+const Op = Sequelize.Op
+const upload = multer({ dest: './public/files/' });
 
 module.exports = (router) => {
 
@@ -25,6 +26,7 @@ module.exports = (router) => {
 
                 return res.json(userData);
             })
+                .catch(err => res.status(500).json({ message: err.message }))
         })
         .put(async (req, res) => {
             try {
@@ -56,7 +58,7 @@ module.exports = (router) => {
         })
 
     router.route('/profile/avatar')
-        .put(upload.single('avatar'), (req, res) => {            
+        .put(upload.single('avatar'), (req, res) => {
             db.user.findOne({ where: { id: req.user.id } }).then((user) => {
                 return db.user.update(
                     {
@@ -68,11 +70,12 @@ module.exports = (router) => {
                     if (user.dataValues.avatar_path) {
                         const oldPath = path.resolve(__dirname, '../') + '/public' + user.dataValues.avatar_path;
                         console.log(oldPath);
-                        
+
                         fs.unlinkSync(oldPath);
                     }
                     return res.json({ path: `/files/${req.file.filename}` })
                 });
             })
+                .catch(err => res.status(500).json({ message: err.message }))
         })
 }

@@ -1,13 +1,10 @@
-const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken'); // аутентификация по JWT для hhtp
+
 const db = require('../models')
 const config = require('../config');
 
 module.exports = (router) => {
-
-    router.use(bodyParser.urlencoded({ extended: false }));
-    router.use(bodyParser.json());
 
     router.route('/register')
         .post((req, res) => {
@@ -30,6 +27,7 @@ module.exports = (router) => {
                         return res.json({ message: "ok", token: token })
                     }
                 })
+                .catch(err => res.status(500).json({ message: err.message }))
         })
 
     router.route('/login')
@@ -49,6 +47,7 @@ module.exports = (router) => {
                 }
                 return res.send("Incorrect email");
 
-            });
+            })
+                .catch(err => res.status(500).json({ message: err.message }))
         });
 }

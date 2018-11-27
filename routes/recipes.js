@@ -1,21 +1,19 @@
-const bodyParser = require('body-parser');
 const multer = require('multer');
 const _ = require('lodash');
+const jwt = require('jsonwebtoken');
+const Sequelize = require('sequelize');
+
 const upload = multer({ dest: './public/files/' });
 const db = require('../models')
 const checkAuth = require('../middlewares/authFunc');
-var jwt = require('jsonwebtoken');
 const config = require('../config');
+
+const Op = Sequelize.Op;
 
 module.exports = (router) => {
 
-  router.use(bodyParser.urlencoded({ extended: false }));
-  router.use(bodyParser.json());
-
   router.route('/')
     .post(checkAuth, upload.single('dish_photo'), (req, res) => {
-      console.log('file', req.file);
-      console.log(req.body);
       const dish_photo = { path: `/files/${req.file.filename}`, name: req.file.originalname };
       const payload = req.body;
       db.recipe.create({ ...payload, dish_photo, user_id: req.user.id })
@@ -36,8 +34,8 @@ module.exports = (router) => {
         if ('category_id' in query) {
           filter.where.category_id = query.category_id
         }
-        if (req.get('Authorization')) {
-          const token = req.get('Authorization');
+        const token = req.get('Authorization');
+        if (token) {
           const decoded = jwt.verify(token, config.secretJWT);
           const user = await db.user.findById(decoded.id);
           userFavor = await user.getRecipes();
@@ -92,14 +90,39 @@ module.exports = (router) => {
             title: recipe.dataValues.title,
             content: recipe.dataValues.content,
             category: recipe.dataValues.category.dataValues.category_name,
+            category_id: recipe.dataValues.category_id,
             complexity: recipe.dataValues.complexity,
             cookingTime: recipe.dataValues.cooking_time,
             dishPhoto: recipe.dataValues.dish_photo,
           }
-
+          const token = req.get('Authorization');
+          if (token) {
+            const decoded = jwt.verify(token, config.secretJWT);
+            if (recipe.dataValues.user_id === decoded.id) {
+              recipeData.isEdit = true;
+            } else {
+              recipeData.isEdit = false;
+            }
+          } else {
+            recipeData.isEdit = false;
+          }
           return res.json(recipeData);
         })
         .catch(err => res.status(500).json({ message: err.message }))
+    })
+    .put(checkAuth, upload.single('dish_photo'), (req, res) => {
+      console.log(req.body);
+
+      const payload = { ...req.body };
+      db.recipe.update(payload,
+        { where: { id: req.params.id } })
+        .then(() => {
+          console.log('upd');
+          return res.json("ok");
+        })
+        .catch((err) => {
+          return res.status(500).json({ message: err.message })
+        })
     })
 
   router.route('/home')
@@ -114,6 +137,7 @@ module.exports = (router) => {
         .then((recipes) => {
           return res.json(recipes);
         })
+        .catch(err => res.status(500).json({ message: err.message }))
     })
 
   router.route('/favorite')
@@ -149,6 +173,57 @@ module.exports = (router) => {
         const user = await db.user.findById(req.user.id);
         let favor = await user.removeRecipe(req.query.recipe_id);
         return res.json('ok');
+      } catch (err) {
+        return res.status(500).json({ message: err.message });
+      }
+    })
+
+  router.route('/search')
+    .get(async (req, res) => {
+      try {
+        const { query } = req;
+        let queryParams = {};
+        queryParams.where = {
+          title: { [Op.iLike]: `%${query.search_data}%` },
+        }
+        if ('category_id' in query) {
+          queryParams.where = {
+            [Op.and]: [{ title: { [Op.iLike]: `%${query.search_data}%` } },
+            { category_id: query.category_id }]
+          }
+        }
+        if ('sort_complexity' in query) {
+          const direction = (query.sort_complexity === 'down') ? 'ASC' : 'DESC';
+          queryParams = {
+            ...queryParams,
+            order: [["complexity", direction]]
+          }
+        }
+        if ('sort_cooking_time' in query) {
+          const direction = (query.sort_cooking_time === 'down') ? 'ASC' : 'DESC';
+          queryParams = {
+            ...queryParams,
+            order: [["cooking_time", direction]]
+          }
+        }
+        const token = req.get('Authorization');
+        if (token) {
+          const decoded = jwt.verify(token, config.secretJWT);
+          const user = await db.user.findById(decoded.id);
+          userFavor = await user.getRecipes();
+          userFavor = await _.groupBy(userFavor, el => el.dataValues.id);
+
+        }
+        let recipes = await db.recipe.findAll(queryParams);
+
+        recipes = recipes.map(recipe => {
+          const id = recipe.dataValues.id;
+          if (userFavor[id]) {
+            recipe.dataValues.isLiked = true;
+          }
+          return recipe;
+        })
+        return res.json(recipes);
       } catch (err) {
         return res.status(500).json({ message: err.message });
       }
