@@ -182,30 +182,34 @@ module.exports = (router) => {
     .get(async (req, res) => {
       try {
         const { query } = req;
-        let queryParams = {};
+        let queryParams = { where: {} };
         queryParams.where = {
           title: { [Op.iLike]: `%${query.search_data}%` },
         }
         if ('category_id' in query) {
-          queryParams.where = {
-            [Op.and]: [{ title: { [Op.iLike]: `%${query.search_data}%` } },
-            { category_id: query.category_id }]
-          }
+          queryParams.where.category_id = query.category_id         
         }
+
         if ('sort_complexity' in query) {
           const direction = (query.sort_complexity === 'down') ? 'ASC' : 'DESC';
-          queryParams = {
-            ...queryParams,
-            order: [["complexity", direction]]
-          }
+          queryParams.order = [["complexity", direction]]
         }
+        
         if ('sort_cooking_time' in query) {
           const direction = (query.sort_cooking_time === 'down') ? 'ASC' : 'DESC';
-          queryParams = {
-            ...queryParams,
-            order: [["cooking_time", direction]]
-          }
+          queryParams.order = [["cooking_time", direction]];
         }
+
+        if ('filter_complexity' in query) {
+          queryParams.where.complexity = { $lte: +query.filter_complexity }
+        }
+
+        if ('filter_time' in query) {
+          queryParams.where.cooking_time = { [Op.lte]: query.filter_time }
+        }
+
+        let recipes = await db.recipe.findAll(queryParams);
+
         const token = req.get('Authorization');
         if (token) {
           const decoded = jwt.verify(token, config.secretJWT);
@@ -213,16 +217,15 @@ module.exports = (router) => {
           userFavor = await user.getRecipes();
           userFavor = await _.groupBy(userFavor, el => el.dataValues.id);
 
+          recipes = recipes.map(recipe => {
+            const id = recipe.dataValues.id;
+            if (userFavor[id]) {
+              recipe.dataValues.isLiked = true;
+            }
+            return recipe;
+          })
         }
-        let recipes = await db.recipe.findAll(queryParams);
 
-        recipes = recipes.map(recipe => {
-          const id = recipe.dataValues.id;
-          if (userFavor[id]) {
-            recipe.dataValues.isLiked = true;
-          }
-          return recipe;
-        })
         return res.json(recipes);
       } catch (err) {
         return res.status(500).json({ message: err.message });
