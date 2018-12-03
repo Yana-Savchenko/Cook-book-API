@@ -98,13 +98,19 @@ module.exports = (router) => {
           const token = req.get('Authorization');
           if (token) {
             const decoded = jwt.verify(token, config.secretJWT);
-            if (recipe.dataValues.user_id === decoded.id) {
-              recipeData.isEdit = true;
-            } else {
-              recipeData.isEdit = false;
-            }
+            recipeData.isEdit = recipe.dataValues.user_id === decoded.id
+            return db.favorite.findOne(
+              { where: { user_id: decoded.id, recipe_id: req.params.id } }
+            ).then((favor) => {
+              recipeData.isLiked = !!favor
+              return res.json(recipeData)
+            }).catch(err => {
+              console.log('err is', err)
+              return res.status(500).json({ error: err.message })
+            });
           } else {
             recipeData.isEdit = false;
+            recipeData.isLiked = false;
           }
           return res.json(recipeData);
         })
@@ -127,33 +133,33 @@ module.exports = (router) => {
 
   router.route('/home')
     .get(async (req, res) => {
-      try{
-      const limit = 6;
-      const direction = 'DESC';
-      const queryParams = {
-        limit,
-        order: [["createdAt", direction]]
-      }
-      let recipes = await db.recipe.findAll(queryParams)
-      const token = req.get('Authorization');
-      if (token) {
-        const decoded = jwt.verify(token, config.secretJWT);
-        const user = await db.user.findById(decoded.id);
-        userFavor = await user.getRecipes();
-        userFavor = await _.groupBy(userFavor, el => el.dataValues.id);
+      try {
+        const limit = 6;
+        const direction = 'DESC';
+        const queryParams = {
+          limit,
+          order: [["createdAt", direction]]
+        }
+        let recipes = await db.recipe.findAll(queryParams)
+        const token = req.get('Authorization');
+        if (token) {
+          const decoded = jwt.verify(token, config.secretJWT);
+          const user = await db.user.findById(decoded.id);
+          userFavor = await user.getRecipes();
+          userFavor = await _.groupBy(userFavor, el => el.dataValues.id);
 
-        recipes = recipes.map(recipe => {
-          const id = recipe.dataValues.id;
-          if (userFavor[id]) {
-            recipe.dataValues.isLiked = true;
-          }
-          return recipe;
-        })
+          recipes = recipes.map(recipe => {
+            const id = recipe.dataValues.id;
+            if (userFavor[id]) {
+              recipe.dataValues.isLiked = true;
+            }
+            return recipe;
+          })
+          return res.json(recipes);
+        }
         return res.json(recipes);
-      }
-      return res.json(recipes);
 
-    }
+      }
       catch (err) {
         return res.status(500).json({ message: err.message });
       }
@@ -206,14 +212,14 @@ module.exports = (router) => {
           title: { [Op.iLike]: `%${query.search_data}%` },
         }
         if ('category_id' in query) {
-          queryParams.where.category_id = query.category_id         
+          queryParams.where.category_id = query.category_id
         }
 
         if ('sort_complexity' in query) {
           const direction = (query.sort_complexity === 'down') ? 'ASC' : 'DESC';
           queryParams.order = [["complexity", direction]]
         }
-        
+
         if ('sort_cooking_time' in query) {
           const direction = (query.sort_cooking_time === 'down') ? 'ASC' : 'DESC';
           queryParams.order = [["cooking_time", direction]];
