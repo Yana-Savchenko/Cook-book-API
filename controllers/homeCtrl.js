@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../models');
 const config = require('../config');
 
+const helpers = require('../helpers');
+
 const home = async (req, res) => {
     try {
       const limit = 6;
@@ -19,13 +21,7 @@ const home = async (req, res) => {
         userFavor = await user.getRecipes();
         userFavor = await _.groupBy(userFavor, el => el.dataValues.id);
 
-        recipes = recipes.map(recipe => {
-          const id = recipe.dataValues.id;
-          if (userFavor[id]) {
-            recipe.dataValues.isLiked = true;
-          }
-          return recipe;
-        })
+        recipes = helpers.setFavorites(recipes, userFavor);
         return res.json(recipes);
       }
       return res.json(recipes);

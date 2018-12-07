@@ -20,9 +20,10 @@ module.exports = (router) => {
     .put(checkAuth, upload.single('dish_photo'), recipeCtrl.updRecipe)
 
   router.route('/favorite')
-    .get(checkAuth, recipeCtrl.getFavorite)
-    .post(checkAuth, recipeCtrl.addFavorite)
-    .delete(checkAuth, recipeCtrl.removeFavorite)
+    .all(checkAuth)
+    .get(recipeCtrl.getFavorite)
+    .post(recipeCtrl.addFavorite)
+    .delete(recipeCtrl.removeFavorite)
 
   router.route('/search')
     .get(recipeCtrl.searchRecipes)
